@@ -238,30 +238,30 @@ type LanguageContextType = {
  */
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
 
-/**
- * Language Provider Component
- *
- * Provides language state and translation functions to the application
- *
- * @param children - Child components
- */
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState("en")
+// /**
+//  * Language Provider Component
+//  *
+//  * Provides language state and translation functions to the application
+//  *
+//  * @param children - Child components
+//  */
+// export function LanguageProvider({ children }: { children: ReactNode }) {
+//   const [language, setLanguage] = useState("en")
 
-  // Use useCallback to memoize the getText function to prevent unnecessary re-renders
-  const getTextForCurrentLanguage = useCallback(
-    (key: string) => {
-      return getText(language, key)
-    },
-    [language],
-  )
+//   // Use useCallback to memoize the getText function to prevent unnecessary re-renders
+//   const getTextForCurrentLanguage = useCallback(
+//     (key: string) => {
+//       return getText(language, key)
+//     },
+//     [language],
+//   )
 
-  return (
-    <LanguageContext.Provider value={{ language, setLanguage, getText: getTextForCurrentLanguage }}>
-      {children}
-    </LanguageContext.Provider>
-  )
-}
+//   return (
+//     <LanguageContext.Provider value={{ language, setLanguage, getText: getTextForCurrentLanguage }}>
+//       {children}
+//     </LanguageContext.Provider>
+//   )
+// }
 
 /**
  * Custom hook to access the language context

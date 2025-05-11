@@ -1,13 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { GoogleGenAI } from "@google/genai";
-import { google } from "@ai-sdk/google"
-import { embed, generateText, embedMany } from "ai"
 import { noInfoResponses } from "@/lib/languages"
 import { createAPIsession } from "./utils";
-
-// Pre-loaded knowledge base - replace with your own documents
-
-
 
 export async function POST(req: NextRequest) {
   try {

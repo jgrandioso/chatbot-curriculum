@@ -2,7 +2,6 @@ import { GoogleGenAI } from "@google/genai";
 import dotenv from 'dotenv';
 import { noInfoResponses } from "@/lib/languages"
 
-
 dotenv.config();
 
 const api_key = process.env.GEMINI_API_KEY
