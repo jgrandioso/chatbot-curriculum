@@ -24,9 +24,13 @@ export default function ChatbotWidget() {
 
   if (!mounted) return null
 
+  // In components/chatbot-widget.tsx
   return (
     <div className="fixed bottom-20 right-4 z-50 w-[400px] h-[600px] shadow-xl rounded-lg overflow-hidden border border-border">
-      <ChatbotPage />
+      <div className="w-full h-full">
+        <ChatbotPage />
+      </div>
     </div>
   )
 }
+
