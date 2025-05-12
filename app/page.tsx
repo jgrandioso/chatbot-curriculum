@@ -1,19 +1,37 @@
 "use client"
 
+/**
+ * This is the main chatbot component for the application.
+ * It's been simplified to use only Spanish language.
+ */
+
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Loader2, Send, Plus, Menu, Globe, ChevronLeft, ChevronRight, Maximize2, Minimize2, X } from "lucide-react"
+import { Loader2, Send, Maximize2, Minimize2, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Avatar } from "@/components/ui/avatar"
-import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { languages, useLanguage } from "@/lib/languages"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
+
+// Spanish text constants
+const SPANISH_TEXT = {
+  newChat: "Nueva conversación",
+  howCanIHelp: "¿Cómo puedo ayudarte hoy?",
+  askAboutDocs:
+    "Pregúntame cualquier cosa sobre los documentos precargados. Solo responderé basándome en la información de mi base de conocimientos.",
+  messagePlaceholder: "Mensaje a Gemini...",
+  disclaimer: "Gemini puede mostrar información inexacta, incluso sobre personas, así que verifica sus respuestas.",
+  loading: "Cargando...",
+  demoTitle: "Demo de RAG con Gemini",
+  usingPreloadedContext: "Usando contexto precargado",
+  enterFullscreen: "Pantalla completa",
+  exitFullscreen: "Salir de pantalla completa",
+  minimizeChatbot: "Minimizar chatbot",
+  noInfo: "No tengo información sobre eso en mi base de conocimientos.",
+}
 
 /**
  * Main Chatbot Component
@@ -22,9 +40,6 @@ import { motion, AnimatePresence } from "framer-motion"
  * It handles conversation state, user interactions, and API communication.
  */
 export default function Home() {
-  // Language context for internationalization
-  const { language, setLanguage, getText } = useLanguage()
-
   // State for client-side rendering check
   const [isClient, setIsClient] = useState(false)
 
@@ -32,13 +47,10 @@ export default function Home() {
   const [query, setQuery] = useState("")
   const [loading, setLoading] = useState(false)
 
-  // Conversation management states
-  const [conversations, setConversations] = useState<{ id: string; title: string }[]>([])
-  const [activeConversation, setActiveConversation] = useState("")
+  // Conversation management state
   const [messages, setMessages] = useState<{ role: "user" | "assistant"; content: string; id: string }[]>([])
 
   // UI state management
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const [position, setPosition] = useState({ x: 20, y: 20 })
@@ -47,21 +59,6 @@ export default function Home() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const chatbotRef = useRef<HTMLDivElement>(null)
-
-  // Track if we've initialized conversations
-  const initializedRef = useRef(false)
-
-  /**
-   * Initialize conversations only once on first render
-   */
-  useEffect(() => {
-    if (!initializedRef.current) {
-      const initialId = Date.now().toString()
-      setConversations([{ id: initialId, title: getText("newChat") }])
-      setActiveConversation(initialId)
-      initializedRef.current = true
-    }
-  }, [getText])
 
   /**
    * Set client-side rendering flag and focus input on mount
@@ -81,41 +78,6 @@ export default function Home() {
   }, [messages])
 
   /**
-   * Update conversation titles when language changes
-   * Carefully implemented to avoid infinite loops
-   */
-  useEffect(() => {
-    if (conversations.length > 0 && initializedRef.current) {
-      // Create a list of "New chat" strings in all languages
-      const newChatStrings = Object.values(languages).map((lang) => {
-        try {
-          // This is a simplified approach - in a real app, you'd need a more robust way to get translations
-          return "New chat" // This is just a placeholder
-        } catch (e) {
-          return "New chat"
-        }
-      })
-
-      // Only update if there are default-titled conversations
-      const hasDefaultTitles = conversations.some(
-        (conv) => conv.title === getText("newChat") || newChatStrings.includes(conv.title),
-      )
-
-      if (hasDefaultTitles) {
-        setConversations((prev) =>
-          prev.map((conv) => {
-            // Check if this conversation has a default title
-            if (conv.title === getText("newChat") || newChatStrings.includes(conv.title)) {
-              return { ...conv, title: getText("newChat") }
-            }
-            return conv
-          }),
-        )
-      }
-    }
-  }, [language, getText]) // Removed conversations from dependencies to prevent infinite loop
-
-  /**
    * Handle form submission for sending messages
    * @param e - Form event
    */
@@ -130,7 +92,7 @@ export default function Home() {
     setLoading(true)
 
     try {
-      // Send query to the API
+      // Send query to the API - hardcoded to Spanish
       const response = await fetch("/api/rag-gemini", {
         method: "POST",
         headers: {
@@ -138,7 +100,7 @@ export default function Home() {
         },
         body: JSON.stringify({
           query: query.trim(),
-          language, // Send the selected language to the API
+          language: "es", // Hardcoded to Spanish
         }),
       })
 
@@ -149,44 +111,19 @@ export default function Home() {
         ...prev,
         { role: "assistant" as const, content: data.text, id: (Date.now() + 1).toString() },
       ])
-
-      // Update conversation title if this is the first message
-      if (messages.length === 0) {
-        setConversations((prev) =>
-          prev.map((conv) => (conv.id === activeConversation ? { ...conv, title: query.substring(0, 30) } : conv)),
-        )
-      }
     } catch (error) {
       console.error("Error:", error)
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant" as const,
-          content: "I'm having trouble connecting right now. Please try again later.",
+          content: "Estoy teniendo problemas para conectarme en este momento. Por favor, inténtalo de nuevo más tarde.",
           id: (Date.now() + 1).toString(),
         },
       ])
     } finally {
       setLoading(false)
     }
-  }
-
-  /**
-   * Start a new chat conversation
-   */
-  const startNewChat = () => {
-    const newId = Date.now().toString()
-    setConversations((prev) => [...prev, { id: newId, title: getText("newChat") }])
-    setActiveConversation(newId)
-    setMessages([])
-  }
-
-  /**
-   * Change the current language
-   * @param code - Language code
-   */
-  const changeLanguage = (code: string) => {
-    setLanguage(code)
   }
 
   /**
@@ -218,7 +155,7 @@ export default function Home() {
 
   // Only render the full UI after client-side hydration is complete
   if (!isClient) {
-    return <div className="flex items-center justify-center h-screen">{getText("loading")}</div>
+    return <div className="flex items-center justify-center h-screen">{SPANISH_TEXT.loading}</div>
   }
 
   // Render minimized chatbot
@@ -267,124 +204,18 @@ export default function Home() {
     <div
       ref={chatbotRef}
       className={cn(
-        "flex bg-background transition-all duration-300 ease-in-out",
-        isFullscreen ? "fixed inset-0 z-50" : "h-screen",
+        "flex bg-background w-full h-full transition-all duration-300 ease-in-out",
+        isFullscreen ? "fixed inset-0 z-50" : "",
       )}
       style={{
         boxShadow: isFullscreen ? "none" : "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
       }}
     >
-      {/* Mobile sidebar trigger */}
-      <Sheet>
-        <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="md:hidden absolute top-4 left-4 z-10">
-            <Menu />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="p-0 w-[280px]">
-          <MobileSidebar
-            conversations={conversations}
-            activeConversation={activeConversation}
-            setActiveConversation={setActiveConversation}
-            startNewChat={startNewChat}
-          />
-        </SheetContent>
-      </Sheet>
-
-      {/* Desktop sidebar with collapse functionality */}
-      <AnimatePresence initial={false}>
-        {!sidebarCollapsed && (
-          <motion.div
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 280, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="hidden md:flex flex-col border-r h-full overflow-hidden"
-          >
-            <div className="p-4">
-              <Button onClick={startNewChat} className="w-full justify-start gap-2">
-                <Plus size={16} />
-                {getText("newChat")}
-              </Button>
-            </div>
-            <Separator />
-            <ScrollArea className="flex-1">
-              <div className="p-2 space-y-1">
-                {conversations.map((conversation) => (
-                  <Button
-                    key={conversation.id}
-                    variant={activeConversation === conversation.id ? "secondary" : "ghost"}
-                    className={cn(
-                      "w-full justify-start text-left truncate h-auto py-3",
-                      activeConversation === conversation.id ? "bg-secondary" : "",
-                    )}
-                    onClick={() => setActiveConversation(conversation.id)}
-                  >
-                    {conversation.title}
-                  </Button>
-                ))}
-              </div>
-            </ScrollArea>
-            <div className="p-4 mt-auto">
-              <div className="text-xs text-muted-foreground">
-                {getText("demoTitle")}
-                <br />
-                {getText("usingPreloadedContext")}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Sidebar collapse toggle button */}
-      <div className="hidden md:flex items-center absolute left-[280px] top-1/2 transform -translate-y-1/2 z-10">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="rounded-full h-8 w-8 border-primary/20 bg-background shadow-md"
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              >
-                {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              {sidebarCollapsed ? getText("expandSidebar") : getText("collapseSidebar")}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-
-      {/* Main chat area */}
+      {/* Main chat area - No sidebar as requested */}
       <div className="flex-1 flex flex-col h-full relative">
         {/* Top control bar */}
         <div className="absolute top-0 right-0 left-0 h-14 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-end px-4 border-b">
-          {/* Language selector */}
           <div className="flex items-center gap-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="icon" className="rounded-full">
-                        <Globe className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {languages.map((lang) => (
-                        <DropdownMenuItem key={lang.code} onClick={() => changeLanguage(lang.code)}>
-                          <span className={language === lang.code ? "font-bold" : ""}>{lang.name}</span>
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TooltipTrigger>
-                <TooltipContent>{getText("changeLanguage")}</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
             {/* Fullscreen toggle */}
             <TooltipProvider>
               <Tooltip>
@@ -393,7 +224,9 @@ export default function Home() {
                     {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>{isFullscreen ? getText("exitFullscreen") : getText("enterFullscreen")}</TooltipContent>
+                <TooltipContent>
+                  {isFullscreen ? SPANISH_TEXT.exitFullscreen : SPANISH_TEXT.enterFullscreen}
+                </TooltipContent>
               </Tooltip>
             </TooltipProvider>
 
@@ -405,7 +238,7 @@ export default function Home() {
                     <X className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>{getText("minimizeChatbot")}</TooltipContent>
+                <TooltipContent>{SPANISH_TEXT.minimizeChatbot}</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
@@ -432,11 +265,12 @@ export default function Home() {
                   <path d="M21 3v5h-5" />
                 </svg>
               </div>
-              <h2 className="text-xl font-bold">{getText("howCanIHelp")}</h2>
-              <p className="text-muted-foreground">{getText("askAboutDocs")}</p>
+              <h2 className="text-xl font-bold">{SPANISH_TEXT.howCanIHelp}</h2>
+              <p className="text-muted-foreground">{SPANISH_TEXT.askAboutDocs}</p>
             </div>
           ) : (
             <div className="space-y-6 max-w-3xl mx-auto">
+              {/* Map through messages and render each one */}
               {messages.map((message) => (
                 <div key={message.id} className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}>
                   <div
@@ -460,7 +294,7 @@ export default function Home() {
                           <path d="M21 3v5h-5" />
                         </svg>
                       ) : (
-                        <span className="text-background">You</span>
+                        <span className="text-background">Tú</span>
                       )}
                     </Avatar>
                     <div
@@ -474,6 +308,7 @@ export default function Home() {
                   </div>
                 </div>
               ))}
+              {/* This ref is used to scroll to the bottom when new messages are added */}
               <div ref={messagesEndRef} />
             </div>
           )}
@@ -487,7 +322,7 @@ export default function Home() {
                 ref={inputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder={getText("messagePlaceholder")}
+                placeholder={SPANISH_TEXT.messagePlaceholder}
                 className="pr-12 py-6 text-base rounded-full shadow-sm border-primary/20"
                 disabled={loading}
               />
@@ -501,63 +336,7 @@ export default function Home() {
               </Button>
             </div>
           </form>
-          <div className="text-xs text-center mt-2 text-muted-foreground">{getText("disclaimer")}</div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/**
- * Mobile Sidebar Component
- *
- * This component renders the sidebar for mobile devices.
- * It's displayed in a slide-out sheet.
- */
-function MobileSidebar({
-  conversations,
-  activeConversation,
-  setActiveConversation,
-  startNewChat,
-}: {
-  conversations: { id: string; title: string }[]
-  activeConversation: string
-  setActiveConversation: (id: string) => void
-  startNewChat: () => void
-}) {
-  const { getText } = useLanguage()
-
-  return (
-    <div className="flex flex-col h-full">
-      <div className="p-4">
-        <Button onClick={startNewChat} className="w-full justify-start gap-2">
-          <Plus size={16} />
-          {getText("newChat")}
-        </Button>
-      </div>
-      <Separator />
-      <ScrollArea className="flex-1">
-        <div className="p-2 space-y-1">
-          {conversations.map((conversation) => (
-            <Button
-              key={conversation.id}
-              variant={activeConversation === conversation.id ? "secondary" : "ghost"}
-              className={cn(
-                "w-full justify-start text-left truncate h-auto py-3",
-                activeConversation === conversation.id ? "bg-secondary" : "",
-              )}
-              onClick={() => setActiveConversation(conversation.id)}
-            >
-              {conversation.title}
-            </Button>
-          ))}
-        </div>
-      </ScrollArea>
-      <div className="p-4 mt-auto">
-        <div className="text-xs text-muted-foreground">
-          {getText("demoTitle")}
-          <br />
-          {getText("usingPreloadedContext")}
+          <div className="text-xs text-center mt-2 text-muted-foreground">{SPANISH_TEXT.disclaimer}</div>
         </div>
       </div>
     </div>

@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { noInfoResponses } from "@/lib/languages"
 import { createAPIsession } from "./utils";
 
 export async function POST(req: NextRequest) {
@@ -9,9 +8,6 @@ export async function POST(req: NextRequest) {
     if (!query || typeof query !== "string") {
       return NextResponse.json({ error: "Query string is required" }, { status: 400 })
     }
-
-    // Get language-specific "no information" response for the system prompt
-    const noInfoResponse = noInfoResponses[language] || noInfoResponses.en
 
     // Generate a response using Gemini in the specified language
     const text = createAPIsession(language)

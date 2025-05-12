@@ -1,6 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
 import dotenv from 'dotenv';
-import { noInfoResponses } from "@/lib/languages"
 
 dotenv.config();
 
@@ -12,9 +11,9 @@ const knowledgeBase = [
 export async function createAPIsession(language:string){
 
   const ai = new GoogleGenAI({ apiKey: api_key });
+// Spanish "no information" response
+const noInfoResponse = "No tengo información sobre eso en mi base de conocimientos."
 
-  // Get language-specific "no information" response for the system prompt
-  const noInfoResponse = noInfoResponses[language] || noInfoResponses.en
 
   const resp = await ai.models.generateContent({
     model: "gemini-2.0-flash",
